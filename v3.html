@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo&display=swap" rel="stylesheet">
+</head>
+<body>
+    <center>
+    <nav>
+        <button class="navBtn" onclick="showScreen('statsScreen')">נתונים</button>
+        <button class="navBtn" onclick="showScreen('configScreen')">הגדר</button>
+    </nav>
+    <!--SCREENS-->
+    <div class="screen" id="statsScreen">
+        <div class="panel">
+            <h3>כמה כסף יהיה עוד חודשיים</h3>
+            <span id="2monthPrediction">loading</span>
+        </div>
+    </div>
+    <div class="screen" id="configScreen" style="display: none;">
+        <div id="oshes" class="panel">loading</div>
+
+        <div class="panel">
+            <h3>הוסף שינוי עו"ש חודשי</h3>
+            <input id="oshNameInput" placeholder="שם השינוי בעוש"/><input id="oshValueInput" placeholder="כמה השינוי" type="number"/><button onclick="addOshClick()">הוסף</button>
+        </div>
+    </div>
+    </center>
+</body>
+<script>
+    const currencySign = '₪';
+    const screensId = ['statsScreen', 'configScreen']; // app screens id's
+    let osh = []; // list of oshObjects
+
+    function oshObject(name, value)
+    {
+        return {'id': Math.random().toString(), 'name': name, 'value': value};
+    }
+
+    function addOsh(name, value)
+    {
+        let obj = oshObject(name, value);
+        osh.push(obj);
+    }
+
+    function removeOsh(oshId)
+    {
+        let index = -1;
+        for (let i in osh)
+        {
+            let oshObj = osh[i];
+            if (oshObj.id == oshId)
+            {
+                index = i;
+            }
+        }
+
+        if (index >= 0)
+        {
+            osh.splice(index, 1);
+        }
+    }
+
+    // prevs and elements - before update
+    const oshes = document.getElementById('oshes');
+    let prevOshes = oshes.innerHTML;
+    
+    function update()
+    {
+        // total earinings
+        let monthTotalEraning = 0;
+        for (let i in osh)
+        {
+            let oshObj = osh[i];
+            monthTotalEraning += oshObj.value;
+        }
+
+        // oshes
+        let res = '<h3>שינויים חודשיים בעו"ש:</h3>';
+        for (let i in osh)
+        {
+            let oshObj = osh[i];
+            res += oshObj.name + ': ' + oshObj.value.toString() + currencySign + ' ' + '<button onclick="removeOsh(' + "'" + oshObj.id + "'" + ')">מחק</button><br>';
+        }
+        res += osh.length == 0 ? 'אין לך שינויים. הוסף!' : ''; // show text if there are no entries
+
+        res += "<br><h3>רווח חודשי: " + monthTotalEraning.toString() + currencySign + "</h3>";
+
+        if (prevOshes != res)
+        {
+            oshes.innerHTML = res;
+            prevOshes = oshes.innerHTML;
+        }
+
+        // stats panels
+        document.getElementById('2monthPrediction').innerHTML = monthTotalEraning * 2 + currencySign;
+    }
+    
+    function addOshClick()
+    {
+        let name = document.getElementById('oshNameInput').value;
+        let value = parseFloat(document.getElementById('oshValueInput').value);
+        addOsh(name, value);
+        update();
+    }
+
+    function showScreen(screenId)
+    {
+        for (let i in screensId)
+        {
+            document.getElementById(screensId[i]).style.display = 'none';
+        }
+        document.getElementById(screenId).style.display = 'block';
+    }
+
+    setInterval(update, 10); // update UI
+</script>
+<style>
+    :root {
+        --font-family: 'Heebo', sans-serif;
+    }
+
+    body {
+        text-align: center;
+        direction: rtl;
+        margin: 0;
+        margin-top: 100px;
+        font-family: var(--font-family);
+    }
+
+    nav {
+        padding: 10px 0px;
+        background-color: AntiqueWhite;
+        position: absolute;
+        top: 0;
+        width: 100%;
+    }
+
+    .panel {
+        padding: 20px;
+        box-shadow: 10px 10px 38px -20px rgba(0,0,0,0.5);
+        border-style: none;
+        border-radius: 10px;
+        margin: 20px;
+    }
+
+    button {
+        padding: 10px;
+        background-color: CadetBlue;
+        border-style: none;
+        /*box-shadow: 10px 10px 38px 0px rgba(0,0,0,0.5);*/
+        margin: 10px;
+        font-family: var(--font-family);
+        border-radius: 10px;
+    }
+
+    button:hover {
+        background-color: black;
+        color: white;
+    }
+
+    input {
+        padding: 10px;
+        font-family: var(--font-family);
+        width: 40%;
+        outline: none;
+    }
+
+    .navBtn {
+        padding: 10px;
+        background-color: white;
+        border-style: solid;
+        border-color: black;
+        box-shadow: none;
+    }
+</style>
+</html>
