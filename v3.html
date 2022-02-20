@@ -22,12 +22,22 @@
             <span id="2monthPrediction">loading</span>
         </div>
     </div>
+    
     <div class="screen" id="configScreen" style="display: none;">
+        <!--Osh Movement-->
         <div id="oshes" class="panel">loading</div>
 
         <div class="panel">
             <h3>הוסף שינוי עו"ש חודשי</h3>
             <input id="oshNameInput" placeholder="שם השינוי בעוש"/><input id="oshValueInput" placeholder="כמה השינוי" type="number"/><button onclick="addOshClick()">הוסף</button>
+        </div>
+
+        <!--Savings-->
+        <div id="savings" class="panel">loading</div>
+
+        <div class="panel">
+            <h3>הוסף חיסכון</h3>
+            <input id="savingNameInput" placeholder="שם החיסכון"/><input id="savingValueInput" placeholder="שווי כעת" type="number"/><input id="savingChangeInput" placeholder="אחוז גדילה שנתי" type="number"/><button onclick="addSavingClick()">הוסף</button>
         </div>
     </div>
     </center>
@@ -36,6 +46,8 @@
     const currencySign = '₪';
     const screensId = ['statsScreen', 'configScreen']; // app screens id's
     let osh = []; // list of oshObjects
+    let savings = []; // list of savingObjects
+    let currectBalance = 0; // the spendable money user have
 
     function oshObject(name, value)
     {
@@ -66,9 +78,40 @@
         }
     }
 
+    function savingObject(name, value, change)
+    {
+        return {'id': Math.random().toString(), 'name': name, 'value': value, 'change': change};
+    }
+    
+    function addSaving(name, value, change)
+    {
+        let obj = savingObject(name, value, change);
+        savings.push(obj);
+    }
+    
+    function removeSaving(saveId)
+    {
+        let index = -1;
+        for (let i in savings)
+        {
+            let obj = savings[i];
+            if (obj.id == saveId)
+            {
+                index = i;
+            }
+        }
+
+        if (index >= 0)
+        {
+            savings.splice(index, 1);
+        }
+    }
+    
     // prevs and elements - before update
     const oshes = document.getElementById('oshes');
     let prevOshes = oshes.innerHTML;
+    const savingsCont = document.getElementById('savings');
+    let prevSavings = savingsCont.innerHTML;
     
     function update()
     {
@@ -78,6 +121,14 @@
         {
             let oshObj = osh[i];
             monthTotalEraning += oshObj.value;
+        }
+
+        // total savings
+        let totalSavings = 0;
+        for (let i in savings)
+        {
+            let obj = savings[i];
+            totalSavings += obj.value;
         }
 
         // oshes
@@ -97,15 +148,55 @@
             prevOshes = oshes.innerHTML;
         }
 
+        // savings
+        res = '<h3>חסכונות:</h3>';
+        for (let i in savings)
+        {
+            let obj = savings[i];
+            res += obj.name + ': ' + obj.value.toString() + currencySign + ' ' + obj.change.toString() + '% שינוי שנתי ' + '<button onclick="removeSaving(' + "'" + obj.id + "'" + ')">מחק</button><br>';
+        }
+        res += savings.length == 0 ? 'אין לך חסכונות. הוסף!' : ''; // show text if there are no entries
+
+        res += "<br><h3>סך הכל בחסכונות: " + totalSavings.toString() + currencySign + "</h3>";
+
+        if (prevSavings != res)
+        {
+            savingsCont.innerHTML = res;
+            prevSavings = savingsCont.innerHTML;
+        }
+
+
         // stats panels
         document.getElementById('2monthPrediction').innerHTML = monthTotalEraning * 2 + currencySign;
     }
     
     function addOshClick()
     {
-        let name = document.getElementById('oshNameInput').value;
-        let value = parseFloat(document.getElementById('oshValueInput').value);
+        const oshNameInput = document.getElementById('oshNameInput');
+        const oshValueInput = document.getElementById('oshValueInput');
+        let name = oshNameInput.value;
+        let value = parseFloat(oshValueInput.value);
         addOsh(name, value);
+
+        oshNameInput.value = '';
+        oshValueInput.value = '';
+        update();
+    }
+
+    function addSavingClick()
+    {
+        const savingNameInput = document.getElementById('savingNameInput');
+        const savingValueInput = document.getElementById('savingValueInput');
+        const savingChangeInput = document.getElementById('savingChangeInput');
+        let name = savingNameInput.value;
+        let value = parseFloat(savingValueInput.value);
+        let change = parseFloat(savingChangeInput.value);
+        addSaving(name, value, change);
+
+        savingNameInput.value = '';
+        savingValueInput.value = '';
+        savingChangeInput.value = '';
+
         update();
     }
 
