@@ -16,20 +16,38 @@
         <button class="navBtn" onclick="showScreen('configScreen')">הגדר</button>
     </nav>
     <!--SCREENS-->
+
+    <!--stats screen-->
     <div class="screen" id="statsScreen">
+        <h1>נתונים</h1>
         <div class="panel">
-            <h3>כמה כסף יהיה עוד חודשיים</h3>
-            <span id="2monthPrediction">loading</span>
+            <h3>יתרה כעת</h3>
+            <span id="currentBalance">loading</span>
+        </div>
+        
+        <div class="panel">
+            <h3>תחזית היתרה לפי חודש</h3>
+            <canvas id="balancePredictionChart" width="auto" height="200px"></canvas>
+            <!--br><span id="2monthPrediction">loading</span-->
+        </div>
+
+        <div class="panel">
+            <h3>תחזית שווי החסכונות לפי חודש</h3>
+            <canvas id="savingsPredictionChart" width="auto" height="200px"></canvas>
+            <!--br><span id="totalAssets">loading</span-->
         </div>
     </div>
     
+    <!--config screen-->
     <div class="screen" id="configScreen" style="display: none;">
         <!--Osh Movement-->
+        <h1>הגדר פרטים</h1>
         <div id="oshes" class="panel">loading</div>
 
         <div class="panel">
             <h3>הוסף שינוי עו"ש חודשי</h3>
-            <input id="oshNameInput" placeholder="שם השינוי בעוש"/><input id="oshValueInput" placeholder="כמה השינוי" type="number"/><button onclick="addOshClick()">הוסף</button>
+            <input id="oshNameInput" placeholder="שם השינוי בעוש"/><input id="oshValueInput" placeholder="כמה השינוי" type="number"/>
+            <button onclick="addOshClick()">הוסף</button>
         </div>
 
         <!--Savings-->
@@ -37,17 +55,168 @@
 
         <div class="panel">
             <h3>הוסף חיסכון</h3>
-            <input id="savingNameInput" placeholder="שם החיסכון"/><input id="savingValueInput" placeholder="שווי כעת" type="number"/><input id="savingChangeInput" placeholder="אחוז גדילה שנתי" type="number"/><button onclick="addSavingClick()">הוסף</button>
+            <input id="savingNameInput" placeholder="שם החיסכון"/><input id="savingValueInput" placeholder="שווי כעת" type="number"/><input id="savingChangeInput" placeholder="אחוז גדילה שנתי" type="number"/>
+            <button onclick="addSavingClick()">הוסף</button>
+        </div>
+
+        <!--Set current balance-->
+        <div class="panel">
+            <h3>הגדר יתרה כעת</h3>
+            <input id="balanceValueInput" placeholder="יתרה כעת" type="number"/>
+            <button onclick="setBalanceClick()">הגדר</button>
         </div>
     </div>
     </center>
 </body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.js"></script>
 <script>
     const currencySign = '₪';
     const screensId = ['statsScreen', 'configScreen']; // app screens id's
     let osh = []; // list of oshObjects
     let savings = []; // list of savingObjects
     let currectBalance = 0; // the spendable money user have
+    // init panel charts
+
+    // balance chart
+    let numOfMonths = 4;
+    let balanceOverTheMonthes = getBalancePredictionForMonth(numOfMonths, 0);
+    let balanceChartLabels = [];
+    for (let i = 0; i < numOfMonths; i++)
+    {
+        let label = (i+1).toString() + ' חודשים';
+        balanceChartLabels.push(label);
+    }
+    
+    const balanceChartData = {
+        labels: balanceChartLabels,
+        datasets: [{
+            label: 'יתרה לפי חודש' + ' (' + currencySign + ')',
+            data: balanceOverTheMonthes,
+            fill: false,
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1
+        }]
+    };
+
+    const balanceChartConfig = {
+        type: 'line',
+        data: balanceChartData,
+        options: {
+            responsive: false,
+            maintainAspectRatio: false,
+        }
+    };
+    const balanceChartCtx = document.getElementById('balancePredictionChart').getContext('2d');
+    const balanceChart = new Chart(balanceChartCtx, balanceChartConfig);
+
+    // total assets chart
+    let savingsValueOverTheMonths = getTotalSavingsValuePrediction(numOfMonths);
+    let savingsChartLabels = [];
+    for (let i = 0; i < numOfMonths; i++)
+    {
+        let label = (i+1).toString() + ' חודשים';
+        savingsChartLabels.push(label);
+    }
+    
+    const savingsChartData = {
+        labels: savingsChartLabels,
+        datasets: [{
+            label: 'ערך החסכונות לפי חודש' + ' (' + currencySign + ')',
+            data: savingsValueOverTheMonths,
+            fill: false,
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1
+        }]
+    };
+
+    const savingsChartConfig = {
+        type: 'line',
+        data: savingsChartData,
+        options: {
+            responsive: false,
+            maintainAspectRatio: false,
+        }
+    };
+    const savingsChartCtx = document.getElementById('savingsPredictionChart').getContext('2d');
+    const savingsChart = new Chart(savingsChartCtx, savingsChartConfig);
+
+    function addData(chart, label, data) {
+        chart.data.labels.push(label);
+        chart.data.datasets.forEach((dataset) => {
+            dataset.data.push(data);
+        });
+        chart.update();
+    }
+
+    function removeData(chart) {
+        chart.data.labels.pop();
+        chart.data.datasets.forEach((dataset) => {
+            dataset.data.pop();
+        });
+        chart.update();
+    }
+
+    function arrayCompare(arr, secArr)
+    {
+        if (arr.length != secArr.length)
+        {
+            return false;
+        }
+        else
+        {
+            for (let i = 0; i < arr.length; i++)
+            {
+                if (arr[i] != secArr[i])
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    function getBalancePredictionForMonth(numOfMonths, monthTotalEraning)
+    {
+        let balanceOverTheMonthes = [];
+        for (let i = 0; i < numOfMonths; i++)
+        {
+            let res = currectBalance + (i * monthTotalEraning);
+            balanceOverTheMonthes.push(res);
+        }
+
+        return balanceOverTheMonthes;
+    }
+
+    function getTotalSavingsValuePrediction(numOfMonths)
+    {
+        let result = [];
+        for (let i = 0; i < numOfMonths; i++)
+        {
+            let res = 0;
+            for (let j = 0; j < savings.length; j++)
+            {
+                let save = savings[j];
+                res += save.value * (((save.change / (12 * 100)) + 1) ** i);
+            }
+            result.push(res);
+        }
+
+        return result;
+    }
+
+    function getTotalAssetsValueOverMonth(numOfMonths, monthTotalEraning)
+    {
+        let result = [];
+        let savings = getTotalSavingsValuePrediction(numOfMonths);
+        let balances = getBalancePredictionForMonth(numOfMonths, monthTotalEraning);
+        for (let i = 0; i < numOfMonths; i++)
+        {
+            result.push(savings[i] + balances[i]);
+        }
+
+        return result;
+    }
 
     function oshObject(name, value)
     {
@@ -107,11 +276,21 @@
         }
     }
     
+    function setBalanceClick()
+    {
+        const balanceValueInput = document.getElementById('balanceValueInput');
+        currectBalance = parseFloat(balanceValueInput.value);
+        balanceValueInput.value = '';
+        update();
+    }
+    
     // prevs and elements - before update
     const oshes = document.getElementById('oshes');
     let prevOshes = oshes.innerHTML;
     const savingsCont = document.getElementById('savings');
     let prevSavings = savingsCont.innerHTML;
+    let prevBalacePredictionData = [];
+    let prevSavingsOverTheMonthes = [];
     
     function update()
     {
@@ -167,7 +346,58 @@
 
 
         // stats panels
-        document.getElementById('2monthPrediction').innerHTML = monthTotalEraning * 2 + currencySign;
+        document.getElementById('currentBalance').innerHTML = currectBalance + currencySign;
+        //document.getElementById('2monthPrediction').innerHTML = monthTotalEraning * 2 + currencySign;
+        //document.getElementById('totalAssets').innerHTML = (totalSavings + currectBalance).toString() + currencySign;
+
+        // charts
+
+        // balance chart
+        numOfMonths = 6;
+        let balanceOverTheMonthes = getBalancePredictionForMonth(numOfMonths, monthTotalEraning);
+        if (arrayCompare(balanceOverTheMonthes, prevBalacePredictionData) == false)
+        {
+            let labels = [];
+            for (let i = 0; i < numOfMonths; i++)
+            {
+                let label = (i).toString() + ' חודשים';
+                labels.push(label);
+            }
+
+            for (let i = 0; i < 10; i++)
+                removeData(balanceChart);
+            
+            for (let i = 0; i < numOfMonths; i++)
+            {
+                addData(balanceChart, labels[i], balanceOverTheMonthes[i]);
+            }
+            //document.getElementById('balancePredictionChart').height = 200;
+
+            prevBalacePredictionData = balanceOverTheMonthes;
+        }
+
+        //savingsChart
+        numOfMonths = 6;
+        let savingsOverTheMonthes = getTotalSavingsValuePrediction(numOfMonths);
+        if (arrayCompare(savingsOverTheMonthes, prevSavingsOverTheMonthes) == false)
+        {
+            let labels = [];
+            for (let i = 0; i < numOfMonths; i++)
+            {
+                let label = (i).toString() + ' חודשים';
+                labels.push(label);
+            }
+
+            for (let i = 0; i < 10; i++)
+                removeData(savingsChart);
+            
+            for (let i = 0; i < numOfMonths; i++)
+            {
+                addData(savingsChart, labels[i], savingsOverTheMonthes[i]);
+            }
+
+            prevSavingsOverTheMonthes = savingsOverTheMonthes;
+        }
     }
     
     function addOshClick()
@@ -220,15 +450,15 @@
         text-align: center;
         direction: rtl;
         margin: 0;
-        margin-top: 100px;
+        margin-bottom: 100px;
         font-family: var(--font-family);
     }
 
     nav {
         padding: 10px 0px;
         background-color: AntiqueWhite;
-        position: absolute;
-        top: 0;
+        position: fixed;
+        bottom: 0;
         width: 100%;
     }
 
