@@ -27,14 +27,17 @@
         
         <div class="panel">
             <h3>💵 תחזית היתרה לפי חודש</h3>
-            <canvas id="balancePredictionChart" style="height: 200px; width: 100%;"></canvas>
-            <!--br><span id="2monthPrediction">loading</span-->
+            <canvas id="balancePredictionChart" style="height: 300px; width: 100%;"></canvas>
         </div>
 
         <div class="panel">
             <h3>💰 תחזית שווי החסכונות לפי חודש</h3>
-            <canvas id="savingsPredictionChart" style="height: 200px; width: 100%;"></canvas>
-            <!--br><span id="totalAssets">loading</span-->
+            <canvas id="savingsPredictionChart" style="height: 300px; width: 100%;"></canvas>
+        </div>
+
+        <div class="panel">
+            <h3>💸 תחזית שווי כלל הנכסים לפי חודש</h3>
+            <canvas id="totalAssetsChart" style="height: 300px; width: 100%;"></canvas>
         </div>
     </div>
     
@@ -76,70 +79,46 @@
     let osh = []; // list of oshObjects
     let savings = []; // list of savingObjects
     let currectBalance = 0; // the spendable money user have
+
+    showScreen(screensId[0]);
+
     // init panel charts
 
     // balance chart
-    let numOfMonths = 7;
-    let balanceOverTheMonthes = getBalancePredictionForMonth(numOfMonths, 0);
-    let balanceChartLabels = [];
-    for (let i = 0; i < numOfMonths; i++)
-    {
-        let label = (i+1).toString() + ' חודשים';
-        balanceChartLabels.push(label);
-    }
-    
-    const balanceChartData = {
-        labels: balanceChartLabels,
-        datasets: [{
-            label: 'יתרה לפי חודש' + ' (' + currencySign + ')',
-            data: balanceOverTheMonthes,
-            fill: false,
-            borderColor: 'rgb(75, 192, 192)',
-            tension: 0.1
-        }]
-    };
+    const balanceChart = createChart('balancePredictionChart', 'יתרה לפי חודש' + ' (' + currencySign + ')');
 
-    const balanceChartConfig = {
-        type: 'line',
-        data: balanceChartData,
-        options: {
-            responsive: false,
-            maintainAspectRatio: false,
-        }
-    };
-    const balanceChartCtx = document.getElementById('balancePredictionChart').getContext('2d');
-    const balanceChart = new Chart(balanceChartCtx, balanceChartConfig);
+    // savings chart
+    const savingsChart = createChart('savingsPredictionChart', 'ערך החסכונות לפי חודש' + ' (' + currencySign + ')');
 
     // total assets chart
-    let savingsValueOverTheMonths = getTotalSavingsValuePrediction(numOfMonths);
-    let savingsChartLabels = [];
-    for (let i = 0; i < numOfMonths; i++)
-    {
-        let label = (i+1).toString() + ' חודשים';
-        savingsChartLabels.push(label);
-    }
-    
-    const savingsChartData = {
-        labels: savingsChartLabels,
-        datasets: [{
-            label: 'ערך החסכונות לפי חודש' + ' (' + currencySign + ')',
-            data: savingsValueOverTheMonths,
-            fill: false,
-            borderColor: 'rgb(75, 192, 192)',
-            tension: 0.1
-        }]
-    };
+    const totalAssetsChart = createChart('totalAssetsChart', 'שווי כולל של נכסים' + ' (' + currencySign + ')');
 
-    const savingsChartConfig = {
-        type: 'line',
-        data: savingsChartData,
-        options: {
-            responsive: false,
-            maintainAspectRatio: false,
-        }
-    };
-    const savingsChartCtx = document.getElementById('savingsPredictionChart').getContext('2d');
-    const savingsChart = new Chart(savingsChartCtx, savingsChartConfig);
+    function createChart(canvasId, title)
+    {
+        const data = {
+            labels: [],
+            datasets: [{
+                label: title,
+                data: [],
+                fill: false,
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        };
+
+        const conf = {
+            type: 'line',
+            data: data,
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+            }
+        };
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        const chart = new Chart(ctx, conf);
+
+        return chart;
+    }
 
     function addData(chart, label, data) {
         chart.data.labels.push(label);
@@ -292,6 +271,7 @@
     let prevSavings = savingsCont.innerHTML;
     let prevBalacePredictionData = [];
     let prevSavingsOverTheMonthes = [];
+    let prevAssetsOverMonth = [];
     
     function update()
     {
@@ -348,12 +328,11 @@
 
         // stats panels
         document.getElementById('currentBalance').innerHTML = currectBalance + currencySign;
-        //document.getElementById('2monthPrediction').innerHTML = monthTotalEraning * 2 + currencySign;
-        //document.getElementById('totalAssets').innerHTML = (totalSavings + currectBalance).toString() + currencySign;
 
         // charts
 
         // balance chart
+        const numOfMonths = 7;
         let balanceOverTheMonthes = getBalancePredictionForMonth(numOfMonths, monthTotalEraning);
         if (arrayCompare(balanceOverTheMonthes, prevBalacePredictionData) == false)
         {
@@ -396,6 +375,28 @@
             }
 
             prevSavingsOverTheMonthes = savingsOverTheMonthes;
+        }
+
+        // total assets value chart
+        let assetsOverMonth = getTotalAssetsValueOverMonth(numOfMonths, monthTotalEraning);
+        if (arrayCompare(assetsOverMonth, prevAssetsOverMonth) == false)
+        {
+            let labels = [];
+            for (let i = 0; i < numOfMonths; i++)
+            {
+                let label = (i).toString() + ' חודשים';
+                labels.push(label);
+            }
+
+            for (let i = 0; i < 10; i++)
+                removeData(totalAssetsChart);
+            
+            for (let i = 0; i < numOfMonths; i++)
+            {
+                addData(totalAssetsChart, labels[i], assetsOverMonth[i]);
+            }
+
+            prevAssetsOverMonth = assetsOverMonth;
         }
     }
     
@@ -466,19 +467,14 @@
 
     .screen {
         display: block;
-        /*opacity: 100%;
-        transition-duration: 0.5s;*/
     }
 
     .screenHidden {
         display: none;
-        /*opacity: 0%;
-        visibility: hidden;
-        transition-duration: 0.5s;*/
     }
 
     nav {
-        padding: 10px 0px;
+        /*padding: 10px 0px;*/
         background-color: DarkSeaGreen;
         position: fixed;
         bottom: 0;
@@ -488,9 +484,10 @@
 
     .panel {
         padding: 20px;
-        box-shadow: 10px 10px 38px -20px rgba(0,0,0,0.5);
-        border-style: none;
-        border-radius: 10px;
+        border-style: solid;
+        border-width: 1px;
+        border-color: lightgray;
+        border-radius: 5px;
         margin: 20px;
     }
 
@@ -515,18 +512,28 @@
     }
 
     .navBtn {
-        padding: 10px;
-        background-color: white;
-        border-style: solid;
-        border-color: black;
+        margin: 0px;
+        padding: 0px;
+        border-radius: 0px;
+        border-style: none;
+        color: black;
+        height: 70px;
+        width: 49%;
+        background: none;
         box-shadow: none;
-        transition-duration: 1s;
     }
 
     .navBtnClicked {
-        border-color: white;
-        background-color: black;
-        color: white;
+        margin: 0px;
+        padding: 0px;
+        border-radius: 0px;
+        border-style: none;
+        color: black;
+        height: 70px;
+        width: 49%;
+        background: none;
+        box-shadow: none;
+        font-weight: bolder;
     }
 </style>
 </html>
