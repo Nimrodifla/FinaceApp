@@ -12,8 +12,8 @@
 <body>
     <center>
     <nav>
-        <button class="navBtn" onclick="showScreen('statsScreen')">נתונים</button>
-        <button class="navBtn" onclick="showScreen('configScreen')">הגדר</button>
+        <button id="statsNavBtn" class="navBtn" onclick="showScreen('statsScreen')">נתונים</button>
+        <button id="configNavBtn" class="navBtn" onclick="showScreen('configScreen')">הגדר</button>
     </nav>
     <!--SCREENS-->
 
@@ -21,31 +21,31 @@
     <div class="screen" id="statsScreen">
         <h1>נתונים</h1>
         <div class="panel">
-            <h3>יתרה כעת</h3>
+            <h3>🪙 יתרה כעת</h3>
             <span id="currentBalance">loading</span>
         </div>
         
         <div class="panel">
-            <h3>תחזית היתרה לפי חודש</h3>
-            <canvas id="balancePredictionChart" width="auto" height="200px"></canvas>
+            <h3>💵 תחזית היתרה לפי חודש</h3>
+            <canvas id="balancePredictionChart" style="height: 200px; width: 100%;"></canvas>
             <!--br><span id="2monthPrediction">loading</span-->
         </div>
 
         <div class="panel">
-            <h3>תחזית שווי החסכונות לפי חודש</h3>
-            <canvas id="savingsPredictionChart" width="auto" height="200px"></canvas>
+            <h3>💰 תחזית שווי החסכונות לפי חודש</h3>
+            <canvas id="savingsPredictionChart" style="height: 200px; width: 100%;"></canvas>
             <!--br><span id="totalAssets">loading</span-->
         </div>
     </div>
     
     <!--config screen-->
-    <div class="screen" id="configScreen" style="display: none;">
+    <div class="screenHidden" id="configScreen">
         <!--Osh Movement-->
         <h1>הגדר פרטים</h1>
         <div id="oshes" class="panel">loading</div>
 
         <div class="panel">
-            <h3>הוסף שינוי עו"ש חודשי</h3>
+            <h3>💵 הוסף שינוי עו"ש חודשי</h3>
             <input id="oshNameInput" placeholder="שם השינוי בעוש"/><input id="oshValueInput" placeholder="כמה השינוי" type="number"/>
             <button onclick="addOshClick()">הוסף</button>
         </div>
@@ -54,14 +54,14 @@
         <div id="savings" class="panel">loading</div>
 
         <div class="panel">
-            <h3>הוסף חיסכון</h3>
+            <h3>💰 הוסף חיסכון</h3>
             <input id="savingNameInput" placeholder="שם החיסכון"/><input id="savingValueInput" placeholder="שווי כעת" type="number"/><input id="savingChangeInput" placeholder="אחוז גדילה שנתי" type="number"/>
             <button onclick="addSavingClick()">הוסף</button>
         </div>
 
         <!--Set current balance-->
         <div class="panel">
-            <h3>הגדר יתרה כעת</h3>
+            <h3>🪙 הגדר יתרה כעת</h3>
             <input id="balanceValueInput" placeholder="יתרה כעת" type="number"/>
             <button onclick="setBalanceClick()">הגדר</button>
         </div>
@@ -72,13 +72,14 @@
 <script>
     const currencySign = '₪';
     const screensId = ['statsScreen', 'configScreen']; // app screens id's
+    const navButtonsId = ['statsNavBtn', 'configNavBtn'] // nav buttons id's in the same order as the screen id's
     let osh = []; // list of oshObjects
     let savings = []; // list of savingObjects
     let currectBalance = 0; // the spendable money user have
     // init panel charts
 
     // balance chart
-    let numOfMonths = 4;
+    let numOfMonths = 7;
     let balanceOverTheMonthes = getBalancePredictionForMonth(numOfMonths, 0);
     let balanceChartLabels = [];
     for (let i = 0; i < numOfMonths; i++)
@@ -311,7 +312,7 @@
         }
 
         // oshes
-        let res = '<h3>שינויים חודשיים בעו"ש:</h3>';
+        let res = '<h3>💵 שינויים חודשיים בעו"ש:</h3>';
         for (let i in osh)
         {
             let oshObj = osh[i];
@@ -328,7 +329,7 @@
         }
 
         // savings
-        res = '<h3>חסכונות:</h3>';
+        res = '<h3>💰 חסכונות:</h3>';
         for (let i in savings)
         {
             let obj = savings[i];
@@ -353,7 +354,6 @@
         // charts
 
         // balance chart
-        numOfMonths = 6;
         let balanceOverTheMonthes = getBalancePredictionForMonth(numOfMonths, monthTotalEraning);
         if (arrayCompare(balanceOverTheMonthes, prevBalacePredictionData) == false)
         {
@@ -377,7 +377,6 @@
         }
 
         //savingsChart
-        numOfMonths = 6;
         let savingsOverTheMonthes = getTotalSavingsValuePrediction(numOfMonths);
         if (arrayCompare(savingsOverTheMonthes, prevSavingsOverTheMonthes) == false)
         {
@@ -432,11 +431,22 @@
 
     function showScreen(screenId)
     {
+        // show the screen
         for (let i in screensId)
         {
-            document.getElementById(screensId[i]).style.display = 'none';
+            document.getElementById(screensId[i])/*.style.display = 'none'*/.className = 'screenHidden';
         }
-        document.getElementById(screenId).style.display = 'block';
+        document.getElementById(screenId)/*.style.display = 'block'*/.className = 'screen';
+
+
+        let index = screensId.indexOf(screenId);
+
+        // set nav buttons classes
+        for (let i in navButtonsId)
+        {
+            document.getElementById(navButtonsId[i]).className = 'navBtn';
+        }
+        document.getElementById(navButtonsId[index]).className = 'navBtnClicked';
     }
 
     setInterval(update, 10); // update UI
@@ -454,12 +464,26 @@
         font-family: var(--font-family);
     }
 
+    .screen {
+        display: block;
+        /*opacity: 100%;
+        transition-duration: 0.5s;*/
+    }
+
+    .screenHidden {
+        display: none;
+        /*opacity: 0%;
+        visibility: hidden;
+        transition-duration: 0.5s;*/
+    }
+
     nav {
         padding: 10px 0px;
-        background-color: AntiqueWhite;
+        background-color: DarkSeaGreen;
         position: fixed;
         bottom: 0;
         width: 100%;
+        box-shadow: 0px -8px 34px -11px rgba(0,0,0,0.75);
     }
 
     .panel {
@@ -472,18 +496,15 @@
 
     button {
         padding: 10px;
-        background-color: CadetBlue;
-        border-style: none;
-        /*box-shadow: 10px 10px 38px 0px rgba(0,0,0,0.5);*/
+        background-color: white;
+        border-style: solid;
+        border-width: 1px;
+        border-color: black;
+        box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.25);
         margin: 10px;
         font-family: var(--font-family);
         border-radius: 10px;
         color: black;
-    }
-
-    button:hover {
-        background-color: black;
-        color: white;
     }
 
     input {
@@ -499,6 +520,13 @@
         border-style: solid;
         border-color: black;
         box-shadow: none;
+        transition-duration: 1s;
+    }
+
+    .navBtnClicked {
+        border-color: white;
+        background-color: black;
+        color: white;
     }
 </style>
 </html>
